@@ -26,93 +26,153 @@ app.use(function (req, res, next) {
   next();
 });
 
-app.get("/", (req, res) =>{
-    res.json({"status": "ok"})
-})
-
-// Autentikacija
-app.get("/auth", (req, res) => {
-    // Logika za generiranje tokena za autentikaciju
-    res.json({ "token": "generated_token_here" });
+app.get("/", (req, res) => {
+  res.json({ status: "ok" });
 });
 
-// Ruta za dohvat svih korisnika
-app.get("/users", (req, res) => {
-    // Logika za dohvat svih korisnika iz baze
-    res.json({ "users": [] }); // Vraćanje korisnika iz baze kao odgovor
+// Authentication
+app.post("/auth", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const token = await auth.authenticateUser(username, password);
+    res.json({ token });
+  } catch (e) {
+    res.status(401).json({ error: e.message });
+  }
 });
 
-// Ruta za dohvat svih studenata
-app.get("/students", (req, res) => {
-    // Logika za dohvat studenata iz baze, možda filtrirano po imenu
-    const searchByName = req.query.name;
-    console.log(searchByName);
-    // Vraćanje studenata iz baze kao odgovor
-    res.json({ "students": [] });
+// Fetch all users
+app.get("/users", async (req, res) => {
+  let db = await connect();
+  try {
+    const users = await db.collection("users").find({}).toArray();
+    res.json(users);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-// Ruta za dohvat svih učitelja
-app.get("/teachers", (req, res) => {
-    // Logika za dohvat učitelja iz baze, možda filtrirano po imenu
-    const searchByName = req.query.name;
-    console.log(searchByName);
-    // Vraćanje učitelja iz baze kao odgovor
-    res.json({ "teachers": [] });
+// Fetch all students, optionally filtered by name
+app.get("/students", async (req, res) => {
+  let db = await connect();
+  const searchByName = req.query.name || "";
+  try {
+    const students = await db
+      .collection("students")
+      .find({ name: new RegExp(searchByName, "i") })
+      .toArray();
+    res.json(students);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-// Ruta za feed studenata
+// Fetch all teachers, optionally filtered by name
+app.get("/teachers", async (req, res) => {
+  let db = await connect();
+  const searchByName = req.query.name || "";
+  try {
+    const teachers = await db
+      .collection("teachers")
+      .find({ name: new RegExp(searchByName, "i") })
+      .toArray();
+    res.json(teachers);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Student feed
 app.get("/student-feed", (req, res) => {
-    // Logika za dohvat feeda za studente
-    res.json({ "feed": [] }); // Vraćanje postova/feeda za studente
+  // Logic to fetch student feed
+  res.json({ feed: [] });
 });
 
-// Ruta za feed učitelja
+// Teacher feed
 app.get("/teacher-feed", (req, res) => {
-    // Logika za dohvat feeda za učitelje
-    res.json({ "feed": [] }); // Vraćanje postova/feeda za učitelje
+  // Logic to fetch teacher feed
+  res.json({ feed: [] });
 });
 
-// Ruta za dohvat pojedinačnog studenta po JMBAG-u
-app.get("/students/:jmbag", (req, res) => {
-    const jmbag = req.params.jmbag;
-    // Logika za dohvat pojedinog studenta prema JMBAG-u iz baze
-    res.json({ "student": { "jmbag": jmbag } });
+// Fetch individual student by JMBAG
+app.get("/students/:jmbag", async (req, res) => {
+  let db = await connect();
+  const jmbag = req.params.jmbag;
+  try {
+    const student = await db.collection("students").findOne({ jmbag: jmbag });
+    if (student) {
+      res.json(student);
+    } else {
+      res.status(404).json({ message: "Student not found" });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-// Ruta za stvaranje novog studenta
-app.post("/students", (req, res) => {
-    // Logika za stvaranje novog studenta u bazi prema poslanim podacima
-    res.status(201).send();
+// Create a new student
+app.post("/students", async (req, res) => {
+  let db = await connect();
+  const newStudent = req.body; // Make sure to validate this data!
+  try {
+    await db.collection("students").insertOne(newStudent);
+    res.status(201).json({ message: "Student created" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-// Ruta za dohvat profila korisnika
-app.get("/profile/:userId", (req, res) => {
-    const userId = req.params.userId;
-    // Logika za dohvat profila korisnika prema ID-u iz baze
-    res.json({ "userProfile": { "userId": userId } });
+// Fetch user profile by ID
+app.get("/profile/:userId", async (req, res) => {
+  let db = await connect();
+  const userId = req.params.userId;
+  try {
+    const userProfile = await db.collection("users").findOne({ userId: userId });
+    res.json(userProfile);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
-  
-  // Ruta za praćenje (follow) korisnika
-  app.post("/follow/:userId", (req, res) => {
-    const userId = req.params.userId;
-    // Logika za praćenje korisnika (follow) u sustavu
-    res.status(200).json({ "message": `You started following user with ID ${userId}` });
+
+// Follow a user
+app.post("/follow/:userId", async (req, res) => {
+  let db = await connect();
+  const userId = req.params.userId;
+  const followerId = req.body.followerId;
+  try {
+    await db.collection("follows").insertOne({ userId, followerId });
+    res.status(200).json({ message: "Following successful" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
-  
-  // Ruta za objavu novog sadržaja od strane korisnika
-  app.post("/posts", (req, res) => {
-    const { userId, content } = req.body;
-    // Logika za stvaranje nove objave u bazi od strane korisnika
-    res.status(201).json({ "message": `Post created by user ${userId}` });
+
+// Create a new post
+app.post("/posts", async (req, res) => {
+  let db = await connect();
+  const { userId, content } = req.body;
+  const newPost = { userId, content, createdAt: new Date() };
+  try {
+    await db.collection("posts").insertOne(newPost);
+    res.status(201).json({ message: "Post created" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
-  
-  // Ruta za prijavu neprikladnog sadržaja
-  app.post("/report-post/:postId", (req, res) => {
-    const postId = req.params.postId;
-    // Logika za prijavu objave kao neprikladne
-    res.status(200).json({ "message": `Post ${postId} reported as inappropriate` });
+
+// Report inappropriate post
+app.post("/report-post/:postId", async (req, res) => {
+  let db = await connect();
+  const postId = req.params.postId;
+  const reason = req.body.reason;
+  try {
+    await db.collection("reports").insertOne({ postId, reason, reportedAt: new Date() });
+    res.status(200).json({ message: "Post reported" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
-  
+
 app.listen(process.env.PORT || port, () => {
-    console.log(`Example app listening on port ${port}`);
-  });
+  console.log(`Example app listening on port ${port}`);
+});
