@@ -8,22 +8,20 @@ let client = new mongo.MongoClient(connection_string);
 
 let db = null;
 
-export default () => {
-  return new Promise((resolve, reject) => {
-    if (db) {
-      resolve(db);
-    } else {
-      client.connect((e) => {
-        if (e) {
-          reject("došlo je do greške " + e);
-        } else {
-          console.log("uspješno spajanje");
-          db = client.db("ProjectManager");
-          resolve(db);
-        }
-      });
+export default async () => {
+  if (db) {
+    return db;
+  } else {
+    try {
+      await client.connect();
+      console.log("uspješno spajanje");
+      db = client.db("gameartdb");
+      return db;
+    } catch (e) {
+      console.error("Error connecting to MongoDB:", e);
+      throw e;
     }
-  });
+  }
 };
 
 

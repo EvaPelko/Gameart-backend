@@ -8,7 +8,7 @@ let authentication = async () => {
   let db = await connect();
   await db.collection("users").createIndex({ email: 1 }, { unique: true });
 };
-authentication();
+//authentication();
 
 export default {
   // Register a new user

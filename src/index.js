@@ -30,6 +30,24 @@ app.get("/", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// ping db to test connection
+app.get("/ping-db", async (req, res) => {
+  try {
+    console.log("pinging db");
+
+    let db = await connect(); // Connect to the database
+    console.log("connected to db, now pinging...");
+    await db.command({ ping: 1 }); // Ping the database
+    console.log("ping successful");
+    res.status(200).json({ message: "Successfully connected to the database." });
+  } catch (e) {
+    console.error("Error during db connection/ping:", e);
+    res.status(500).json({ error: "Failed to connect to the database: " + e.message });
+  }
+});
+
+
+
 // Authentication
 app.post("/auth", async (req, res) => {
   const { username, password } = req.body;
