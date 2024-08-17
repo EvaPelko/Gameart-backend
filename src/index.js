@@ -6,6 +6,11 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 import auth from "./auth.js";
 import db from "./db.js";
+import { ObjectId } from "mongodb";
+import multer from "multer";
+import path from "path";
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 var app = express();
 const port = 3000;
@@ -46,8 +51,6 @@ app.get("/ping-db", async (req, res) => {
   }
 });
 
-
-
 // Authentication
 app.post("/auth", async (req, res) => {
   const { username, password } = req.body;
@@ -76,8 +79,14 @@ app.get("/students", async (req, res) => {
   const searchByName = req.query.name || "";
   try {
     const students = await db
-      .collection("students")
-      .find({ name: new RegExp(searchByName, "i") })
+      .collection("users")
+      .find({
+        ProfileType: "Student", // Match exactly "Student"
+        $or: [
+          { FirstName: new RegExp(searchByName, "i") },
+          { LastName: new RegExp(searchByName, "i") }
+        ]
+      })
       .toArray();
     res.json(students);
   } catch (e) {
@@ -91,8 +100,14 @@ app.get("/teachers", async (req, res) => {
   const searchByName = req.query.name || "";
   try {
     const teachers = await db
-      .collection("teachers")
-      .find({ name: new RegExp(searchByName, "i") })
+      .collection("users")
+      .find({
+        ProfileType: "Teacher", // Match exactly "Teacher"
+        $or: [
+          { FirstName: new RegExp(searchByName, "i") },
+          { LastName: new RegExp(searchByName, "i") }
+        ]
+      })
       .toArray();
     res.json(teachers);
   } catch (e) {
@@ -100,43 +115,112 @@ app.get("/teachers", async (req, res) => {
   }
 });
 
+
 // Student feed
-app.get("/student-feed", (req, res) => {
-  // Logic to fetch student feed
-  res.json({ feed: [] });
-});
-
-// Teacher feed
-app.get("/teacher-feed", (req, res) => {
-  // Logic to fetch teacher feed
-  res.json({ feed: [] });
-});
-
-// Fetch individual student by JMBAG
-app.get("/students/:jmbag", async (req, res) => {
+app.get("/student-feed", async (req, res) => {
   let db = await connect();
-  const jmbag = req.params.jmbag;
   try {
-    const student = await db.collection("students").findOne({ jmbag: jmbag });
-    if (student) {
-      res.json(student);
-    } else {
-      res.status(404).json({ message: "Student not found" });
-    }
+    // Fetch all posts from the student-posts collection, sorted by creation date (newest first)
+    const studentPosts = await db
+      .collection("student-posts")
+      .find({})
+      .sort({ posted_at: -1 }) // Sort by createdAt field in descending order
+      .toArray();
+
+    res.json({ feed: studentPosts });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// Create a new student
-app.post("/students", async (req, res) => {
+// Teacher feed
+app.get("/teacher-feed", async (req, res) => {
   let db = await connect();
-  const newStudent = req.body; // Make sure to validate this data!
   try {
-    await db.collection("students").insertOne(newStudent);
-    res.status(201).json({ message: "Student created" });
+    // Fetch all posts from the teacher-posts collection, sorted by creation date (newest first)
+    const teacherPosts = await db
+      .collection("teacher-posts")
+      .find({})
+      .sort({ posted_at: -1 }) // Sort by createdAt field in descending order
+      .toArray();
+
+    res.json({ feed: teacherPosts });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// Fetch an user by their id
+app.get("/users/:id", async (req, res) => {
+  let db = await connect();
+  const userId = req.params.id;
+
+  try {
+    // Convert the ID from a string to an ObjectId
+    const user = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (e) {
+    res.status(500).json({ error: "An error occurred while fetching the user: " + e.message });
+  }
+});
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Set up multer for file storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, 'uploads/posts/');
+    
+    // Ensure the directory exists
+    fs.mkdirSync(uploadPath, { recursive: true });
+
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname)); // Save with a unique name
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// Route to create a new post
+app.post('/posts', upload.single('image'), async (req, res) => {
+  let db = await connect();
+
+  const { title, text, email, userRole } = req.body;
+  const imageFile = req.file ? req.file.path : null;
+
+  const postDoc = {
+    url: imageFile, // Local path or could be a cloud storage URL
+    title: title,
+    text: text,
+    posted_at: new Date(), // Save as Date object
+    email: email,
+    userRole: userRole,
+  };
+
+  try {
+    if (userRole === "Student") {
+      const studentPostsRef = db.collection("student-posts");
+      await studentPostsRef.insertOne(postDoc);
+      res.status(201).json({ message: 'Post saved to student-posts collection', post: postDoc });
+    } else if (userRole === "Teacher") {
+      const teacherPostsRef = db.collection("teacher-posts");
+      await teacherPostsRef.insertOne(postDoc);
+      res.status(201).json({ message: 'Post saved to teacher-posts collection', post: postDoc });
+    } else {
+      res.status(400).json({ error: 'Invalid user role' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error saving post: ' + error.message });
   }
 });
 
