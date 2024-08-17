@@ -150,7 +150,7 @@ app.get("/teacher-feed", async (req, res) => {
   }
 });
 
-// Fetch an user by their id
+// Fetch a user by their id
 app.get("/users/:id", async (req, res) => {
   let db = await connect();
   const userId = req.params.id;
@@ -224,6 +224,42 @@ app.post('/posts', upload.single('image'), async (req, res) => {
   }
 });
 
+// Fetch all comments
+app.get("/comments", async (req, res) => {
+  let db = await connect();
+  try {
+    // Fetch all posts from the comments collection, sorted by creation date (newest first)
+    const comments = await db
+      .collection("comments")
+      .find({})
+      .sort({ posted_at: -1 }) // Sort by createdAt field in descending order
+      .toArray();
+
+    res.json({ feed: comments });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Fetch comments for a specific post
+app.get("/comments/:postId", async (req, res) => {
+  let db = await connect();
+  const postId = req.params.postId;
+
+  try {
+    // Fetch comments that match the specific postId, sorted by creation date (newest first)
+    const comments = await db
+      .collection("comments")
+      .find({ postId: new ObjectId(postId) })
+      .sort({ posted_at: -1 }) // Sort by posted_at field in descending order
+      .toArray();
+
+    res.json({ comments });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Fetch user profile by ID
 app.get("/profile/:userId", async (req, res) => {
   let db = await connect();
@@ -248,7 +284,7 @@ app.post("/follow/:userId", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-
+/* 
 // Create a new post
 app.post("/posts", async (req, res) => {
   let db = await connect();
@@ -260,7 +296,7 @@ app.post("/posts", async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
-});
+}); */
 
 // Report inappropriate post
 app.post("/report-post/:postId", async (req, res) => {
