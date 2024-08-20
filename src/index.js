@@ -64,15 +64,18 @@ app.post("/users", async (req, res) => {
 });
 
 // Authentication
+// Authentication
 app.post("/auth", async (req, res) => {
   const { email, password } = req.body;
   try {
     const token = await auth.authenticateUser(email, password);
     res.json({ token });
   } catch (e) {
+    console.error("Authentication error:", e.message);
     res.status(401).json({ error: e.message });
   }
 });
+
 
 // Fetch all users
 app.get("/users", async (req, res) => {

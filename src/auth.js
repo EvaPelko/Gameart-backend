@@ -3,6 +3,9 @@ import connect from "./db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
+// Hardcoded JWT secret (Note: this is not recommended for production)
+const JWT_SECRET = "your_super_secret_key";
+
 // Ensure that the "users" collection has a unique index on the "email" field
 let authentication = async () => {
   let db = await connect();
@@ -50,7 +53,7 @@ export default {
 
     if (user && user.Password && (await bcrypt.compare(password, user.Password))) {
       delete user.Password;
-      let token = jwt.sign(user, process.env.JWT_SECRET, {
+      let token = jwt.sign(user, JWT_SECRET, {
         algorithm: "HS512",
         expiresIn: "1 week",
       });
@@ -65,6 +68,7 @@ export default {
       throw new Error("Cannot authenticate");
     }
   },
+  
 
   // Verify the JWT
   verify(req, res, next) {
