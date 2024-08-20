@@ -6,7 +6,9 @@ import jwt from "jsonwebtoken";
 // Ensure that the "users" collection has a unique index on the "email" field
 let authentication = async () => {
   let db = await connect();
-  await db.collection("users").createIndex({ email: 1 }, { unique: true });
+  //await db.collection("users").createIndex({ email: 1 }, { unique: true });
+  db.users.dropIndex("email_1");
+
 };
 //authentication();
 
@@ -14,23 +16,18 @@ export default {
   // Register a new user
   async registerUser(userData) {
     let db = await connect();
-
-    // Validation to ensure all required fields are present
-    if (!userData.email || !userData.password || !userData.firstName || !userData.lastName || !userData.profileType) {
-      throw new Error("All fields are required (email, password, firstName, lastName, profileType)");
+    
+    // Check if the email already exists
+    const existingUser = await db.collection("users").findOne({ Email: userData.email });
+    
+    if (existingUser) {
+      throw new Error("User already exists with this email!");
     }
 
-    // Hash the password
-    let hashedPassword;
-    try {
-      hashedPassword = await bcrypt.hash(userData.password, 8);
-    } catch (error) {
-      throw new Error("Failed to hash password: " + error.message);
-    }
-
+    // Proceed with the registration if the email is unique
     let doc = {
       Email: userData.email,
-      Password: hashedPassword,
+      Password: await bcrypt.hash(userData.password, 8),
       FirstName: userData.firstName,
       LastName: userData.lastName,
       ProfileType: userData.profileType, // "Student" or "Teacher"
@@ -42,14 +39,10 @@ export default {
         return result;
       }
     } catch (e) {
-      if (e.name === "MongoError" && e.code === 11000) {
-        throw new Error("User already exists!");
-      } else {
-        throw new Error("Failed to register user: " + e.message);
-      }
+      throw new Error("Failed to register user: " + e.message);
     }
   },
-
+  
   // Authenticate a user
   async authenticateUser(email, password) {
     let db = await connect();
