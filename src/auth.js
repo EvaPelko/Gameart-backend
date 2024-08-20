@@ -14,9 +14,23 @@ export default {
   // Register a new user
   async registerUser(userData) {
     let db = await connect();
+
+    // Validation to ensure all required fields are present
+    if (!userData.email || !userData.password || !userData.firstName || !userData.lastName || !userData.profileType) {
+      throw new Error("All fields are required (email, password, firstName, lastName, profileType)");
+    }
+
+    // Hash the password
+    let hashedPassword;
+    try {
+      hashedPassword = await bcrypt.hash(userData.password, 8);
+    } catch (error) {
+      throw new Error("Failed to hash password: " + error.message);
+    }
+
     let doc = {
       Email: userData.email,
-      Password: await bcrypt.hash(userData.password, 8),
+      Password: hashedPassword,
       FirstName: userData.firstName,
       LastName: userData.lastName,
       ProfileType: userData.profileType, // "Student" or "Teacher"

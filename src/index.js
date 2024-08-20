@@ -51,11 +51,23 @@ app.get("/ping-db", async (req, res) => {
   }
 });
 
+// Register a new user
+app.post("/users", async (req, res) => {
+  try {
+    const userData = req.body;
+    const result = await auth.registerUser(userData);
+    res.status(201).json({ message: "User registered successfully", userId: result.insertedId });
+  } catch (e) {
+    console.error("Error registering user:", e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Authentication
 app.post("/auth", async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
   try {
-    const token = await auth.authenticateUser(username, password);
+    const token = await auth.authenticateUser(email, password);
     res.json({ token });
   } catch (e) {
     res.status(401).json({ error: e.message });
