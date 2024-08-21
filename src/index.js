@@ -166,6 +166,44 @@ app.get("/teacher-feed", async (req, res) => {
   }
 });
 
+// Fetch a specific student post by its ID
+app.get("/student-feed/:id", async (req, res) => {
+  let db = await connect();
+  const postId = req.params.id;
+
+  try {
+    // Fetch the post with the specific postId
+    const post = await db.collection("student-posts").findOne({ _id: new ObjectId(postId) });
+
+    if (post) {
+      res.json(post);
+    } else {
+      res.status(404).json({ error: "Post not found" });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Fetch a specific teacher post by its ID
+app.get("/teacher-feed/:id", async (req, res) => {
+  let db = await connect();
+  const postId = req.params.id;
+
+  try {
+    // Fetch the post with the specific postId
+    const post = await db.collection("teacher-posts").findOne({ _id: new ObjectId(postId) });
+
+    if (post) {
+      res.json(post);
+    } else {
+      res.status(404).json({ error: "Post not found" });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Fetch a user by their id
 app.get("/users/:id", async (req, res) => {
   let db = await connect();
@@ -303,19 +341,6 @@ app.post("/follow/:userId", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-/* 
-// Create a new post
-app.post("/posts", async (req, res) => {
-  let db = await connect();
-  const { userId, content } = req.body;
-  const newPost = { userId, content, createdAt: new Date() };
-  try {
-    await db.collection("posts").insertOne(newPost);
-    res.status(201).json({ message: "Post created" });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-}); */
 
 // Report inappropriate post
 app.post("/report-post/:postId", async (req, res) => {
