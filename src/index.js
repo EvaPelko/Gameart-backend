@@ -12,6 +12,7 @@ import path from "path";
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
+
 var app = express();
 const port = 3000;
 
@@ -63,7 +64,7 @@ app.post("/users", async (req, res) => {
   }
 });
 
-// Authentication
+
 // Authentication
 app.post("/auth", async (req, res) => {
   const { email, password } = req.body;
@@ -213,7 +214,7 @@ app.post('/posts', upload.single('image'), async (req, res) => {
   const imageFile = req.file ? req.file.path : null;
 
   const postDoc = {
-    url: imageFile, // Local path or could be a cloud storage URL
+    url: req.file ? `/uploads/posts/${req.file.filename}` : null, // Store relative URL
     title: title,
     text: text,
     posted_at: new Date(), // Save as Date object
@@ -238,6 +239,9 @@ app.post('/posts', upload.single('image'), async (req, res) => {
     res.status(500).json({ error: 'Error saving post: ' + error.message });
   }
 });
+
+// Serve static files from the "uploads" directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Fetch all comments
 app.get("/comments", async (req, res) => {
