@@ -317,6 +317,33 @@ app.get("/comments/:postId", async (req, res) => {
   }
 });
 
+// Route to post a new comment
+app.post("/comments", async (req, res) => {
+  let db = await connect();
+  const { text, email, postId } = req.body;
+
+  // Validate required fields
+  if (!text || !email || !postId) {
+      return res.status(400).json({ error: "All fields (text, email, postId) are required." });
+  }
+
+  try {
+      // Ensure postId is a valid ObjectId using createFromHexString
+      const commentDoc = {
+          text: text,
+          email: email,
+          postId: new ObjectId(postId), // Use ObjectId for the postId
+          posted_at: new Date() // Store the current date as the time the comment was posted
+      };
+
+      const result = await db.collection("comments").insertOne(commentDoc);
+      res.status(201).json({ message: 'Comment posted successfully', commentId: result.insertedId });
+  } catch (error) {
+      console.error("Error posting comment:", error);
+      res.status(500).json({ error: 'Error posting comment: ' + error.message });
+  }
+});
+
 // Fetch user profile by ID
 app.get("/profile/:userId", async (req, res) => {
   let db = await connect();
