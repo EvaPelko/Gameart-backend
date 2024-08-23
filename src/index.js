@@ -69,13 +69,14 @@ app.post("/users", async (req, res) => {
 app.post("/auth", async (req, res) => {
   const { email, password } = req.body;
   try {
-    const token = await auth.authenticateUser(email, password);
-    res.json({ token });
+      const user = await auth.authenticateUser(email, password);
+      console.log("Backend response:", user); // Log backend response
+      res.json(user);
   } catch (e) {
-    console.error("Authentication error:", e.message);
-    res.status(401).json({ error: e.message });
+      res.status(401).json({ error: e.message });
   }
 });
+
 
 
 // Fetch all users
@@ -248,35 +249,38 @@ const upload = multer({ storage: storage });
 app.post('/posts', upload.single('image'), async (req, res) => {
   let db = await connect();
 
-  const { title, text, email, userRole } = req.body;
-  const imageFile = req.file ? req.file.path : null;
-
-  const postDoc = {
-    url: req.file ? `/uploads/posts/${req.file.filename}` : null, // Store relative URL
-    title: title,
-    text: text,
-    posted_at: new Date(), // Save as Date object
-    email: email,
-    userRole: userRole,
-  };
-
   try {
-    if (userRole === "Student") {
-      const studentPostsRef = db.collection("student-posts");
-      await studentPostsRef.insertOne(postDoc);
-      res.status(201).json({ message: 'Post saved to student-posts collection', post: postDoc });
-    } else if (userRole === "Teacher") {
-      const teacherPostsRef = db.collection("teacher-posts");
-      await teacherPostsRef.insertOne(postDoc);
-      res.status(201).json({ message: 'Post saved to teacher-posts collection', post: postDoc });
-    } else {
-      res.status(400).json({ error: 'Invalid user role' });
-    }
+      const { title, text, email, userRole } = req.body;
+      if (!title || !text || !email || !userRole) {
+          throw new Error('Missing required fields');
+      }
+
+      const postDoc = {
+          url: req.file ? `/uploads/posts/${req.file.filename}` : null,
+          title: title,
+          text: text,
+          posted_at: new Date(),
+          email: email,
+          userRole: userRole,
+      };
+
+      if (userRole === "Student") {
+          const studentPostsRef = db.collection("student-posts");
+          await studentPostsRef.insertOne(postDoc);
+          res.status(201).json({ message: 'Post saved to student-posts collection', post: postDoc });
+      } else if (userRole === "Teacher") {
+          const teacherPostsRef = db.collection("teacher-posts");
+          await teacherPostsRef.insertOne(postDoc);
+          res.status(201).json({ message: 'Post saved to teacher-posts collection', post: postDoc });
+      } else {
+          res.status(400).json({ error: 'Invalid user role' });
+      }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error saving post: ' + error.message });
+      console.error('Error saving post:', error.message);
+      res.status(400).json({ error: 'Error saving post: ' + error.message });
   }
 });
+
 
 // Serve static files from the "uploads" directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
