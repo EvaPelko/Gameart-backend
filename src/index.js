@@ -281,9 +281,29 @@ app.post('/posts', upload.single('image'), async (req, res) => {
   }
 });
 
-
 // Serve static files from the "uploads" directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Route to fetch all posts by a specific user
+app.get("/posts/user/:email", async (req, res) => {
+  let db = await connect();
+  const userEmail = req.params.email;
+
+  try {
+      // Fetch all posts from both "student-posts" and "teacher-posts" collections where email matches
+      const studentPosts = await db.collection("student-posts").find({ email: userEmail }).toArray();
+      const teacherPosts = await db.collection("teacher-posts").find({ email: userEmail }).toArray();
+
+      // Combine both arrays into one
+      const allPosts = studentPosts.concat(teacherPosts);
+
+      // Return all posts made by the user
+      res.status(200).json(allPosts);
+  } catch (e) {
+      console.error("Error fetching posts by user:", e);
+      res.status(500).json({ error: "Failed to fetch posts by user: " + e.message });
+  }
+});
 
 // Fetch all comments
 app.get("/comments", async (req, res) => {
