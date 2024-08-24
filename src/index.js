@@ -284,6 +284,56 @@ app.post('/posts', upload.single('image'), async (req, res) => {
 // Serve static files from the "uploads" directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Delete a student post by ID
+app.delete("/student-posts/:id", async (req, res) => {
+  let db = await connect();
+  const postId = req.params.id;
+
+  // Check if postId is valid
+  if (!ObjectId.isValid(postId)) {
+    return res.status(400).json({ error: 'Invalid post ID' });
+  }
+
+  try {
+    // Convert postId to ObjectId if it's not already one
+    const result = await db.collection("student-posts").deleteOne({ _id: new ObjectId(postId) });
+
+    if (result.deletedCount === 1) {
+      res.status(200).json({ message: 'Post deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Post not found' });
+    }
+  } catch (e) {
+    console.error("Error deleting post:", e);
+    res.status(500).json({ error: 'An error occurred while deleting the post' });
+  }
+});
+
+// Delete a teacher post by ID
+app.delete("/teacher-posts/:id", async (req, res) => {
+  let db = await connect();
+  const postId = req.params.id;
+
+  // Check if postId is valid
+  if (!ObjectId.isValid(postId)) {
+    return res.status(400).json({ error: 'Invalid post ID' });
+  }
+
+  try {
+    // Convert postId to ObjectId if it's not already one
+    const result = await db.collection("teacher-posts").deleteOne({ _id: new ObjectId(postId) });
+
+    if (result.deletedCount === 1) {
+      res.status(200).json({ message: 'Post deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Post not found' });
+    }
+  } catch (e) {
+    console.error("Error deleting post:", e);
+    res.status(500).json({ error: 'An error occurred while deleting the post' });
+  }
+});
+
 // Route to fetch all posts by a specific user
 app.get("/posts/user/:email", async (req, res) => {
   let db = await connect();
