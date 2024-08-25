@@ -335,71 +335,82 @@ app.delete("/teacher-posts/:id", async (req, res) => {
     res.status(500).json({ error: 'An error occurred while deleting the post' });
   }
 });
-
-//route to handle student post likes
+// Route to handle student post likes
 app.post("/student-posts/:postId/like", async (req, res) => {
   const { postId } = req.params;
   const { userEmail } = req.body; // The email of the user liking the post
   let db = await connect();
 
   try {
-    const collectionName = await db.collection("student-posts").findOne({ _id: new ObjectId(postId) }) ? "student-posts" : "teacher-posts";
-    const postRef = db.collection(collectionName);
+    const postRef = db.collection("student-posts");
 
-    // Check if the user has already liked the post
+    // Check if the post exists
     const post = await postRef.findOne({ _id: new ObjectId(postId) });
 
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Ensure likedBy is an array to avoid null reference
+    post.likedBy = post.likedBy || [];
+
     if (post.likedBy.includes(userEmail)) {
-        return res.status(400).json({ message: 'User has already liked this post' });
+      return res.status(400).json({ message: 'User has already liked this post' });
     }
 
     // Update the post: increment likes and add userEmail to likedBy array
     await postRef.updateOne(
-        { _id: new ObjectId(postId) },
-        {
-            $inc: { likes: 1 },
-            $push: { likedBy: userEmail }
-        }
+      { _id: new ObjectId(postId) },
+      {
+        $inc: { likes: 1 },
+        $push: { likedBy: userEmail }
+      }
     );
 
     res.status(200).json({ message: 'Post liked successfully' });
-} catch (error) {
+  } catch (error) {
     console.error('Error liking post:', error.message);
     res.status(500).json({ error: 'Error liking post: ' + error.message });
-}
+  }
 });
 
-//route to handle teacher post likes
+// Route to handle teacher post likes
 app.post("/teacher-posts/:postId/like", async (req, res) => {
   const { postId } = req.params;
   const { userEmail } = req.body; // The email of the user liking the post
   let db = await connect();
 
   try {
-    const collectionName = await db.collection("teacher-posts").findOne({ _id: new ObjectId(postId) }) ? "student-posts" : "teacher-posts";
-    const postRef = db.collection(collectionName);
+    const postRef = db.collection("teacher-posts");
 
-    // Check if the user has already liked the post
+    // Check if the post exists
     const post = await postRef.findOne({ _id: new ObjectId(postId) });
 
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Ensure likedBy is an array to avoid null reference
+    post.likedBy = post.likedBy || [];
+
     if (post.likedBy.includes(userEmail)) {
-        return res.status(400).json({ message: 'User has already liked this post' });
+      return res.status(400).json({ message: 'User has already liked this post' });
     }
 
     // Update the post: increment likes and add userEmail to likedBy array
     await postRef.updateOne(
-        { _id: new ObjectId(postId) },
-        {
-            $inc: { likes: 1 },
-            $push: { likedBy: userEmail }
-        }
+      { _id: new ObjectId(postId) },
+      {
+        $inc: { likes: 1 },
+        $push: { likedBy: userEmail }
+      }
     );
 
     res.status(200).json({ message: 'Post liked successfully' });
-} catch (error) {
+  } catch (error) {
     console.error('Error liking post:', error.message);
     res.status(500).json({ error: 'Error liking post: ' + error.message });
-}
+  }
 });
 
 // Route to fetch all posts by a specific user
