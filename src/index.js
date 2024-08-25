@@ -263,7 +263,9 @@ app.post('/posts', upload.single('image'), async (req, res) => {
           email: email,
           userRole: userRole,
           likes: 0, // Initialize likes count
-          likedBy: [] // Initialize likedBy as an empty array
+          likedBy: [], // Initialize likedBy as an empty array
+          reports: 0,       // Initialize reports count
+          reportedBy: [],    // Initialize reportedBy as an empty array
       };
 
       if (userRole === "Student") {
@@ -412,6 +414,79 @@ app.post("/teacher-posts/:postId/like", async (req, res) => {
     res.status(500).json({ error: 'Error liking post: ' + error.message });
   }
 });
+
+// Route to handle student post reports
+app.post("/student-posts/:postId/report", async (req, res) => {
+  const { postId } = req.params;
+  const { userEmail } = req.body; // The email of the user reporting the post
+  let db = await connect();
+
+  try {
+      const postRef = db.collection("student-posts");
+      
+      // Check if the user has already reported the post
+      const post = await postRef.findOne({ _id: new ObjectId(postId) });
+
+      if (!post) {
+          return res.status(404).json({ message: 'Post not found' });
+      }
+
+      if (post.reportedBy.includes(userEmail)) {
+          return res.status(400).json({ message: 'You have already reported this post.' });
+      }
+
+      // Update the post: increment reports and add userEmail to reportedBy array
+      await postRef.updateOne(
+          { _id: new ObjectId(postId) },
+          {
+              $inc: { reports: 1 },
+              $push: { reportedBy: userEmail }
+          }
+      );
+
+      res.status(200).json({ message: 'Post reported successfully' });
+  } catch (error) {
+      console.error('Error reporting post:', error.message);
+      res.status(500).json({ error: 'Error reporting post: ' + error.message });
+  }
+});
+
+// Route to handle teacher post reports
+app.post("/teacher-posts/:postId/report", async (req, res) => {
+  const { postId } = req.params;
+  const { userEmail } = req.body; // The email of the user reporting the post
+  let db = await connect();
+
+  try {
+      const postRef = db.collection("teacher-posts");
+
+      // Check if the user has already reported the post
+      const post = await postRef.findOne({ _id: new ObjectId(postId) });
+
+      if (!post) {
+          return res.status(404).json({ message: 'Post not found' });
+      }
+
+      if (post.reportedBy.includes(userEmail)) {
+          return res.status(400).json({ message: 'You have already reported this post.' });
+      }
+
+      // Update the post: increment reports and add userEmail to reportedBy array
+      await postRef.updateOne(
+          { _id: new ObjectId(postId) },
+          {
+              $inc: { reports: 1 },
+              $push: { reportedBy: userEmail }
+          }
+      );
+
+      res.status(200).json({ message: 'Post reported successfully' });
+  } catch (error) {
+      console.error('Error reporting post:', error.message);
+      res.status(500).json({ error: 'Error reporting post: ' + error.message });
+  }
+});
+
 
 // Route to fetch all posts by a specific user
 app.get("/posts/user/:email", async (req, res) => {
