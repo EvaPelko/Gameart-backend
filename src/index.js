@@ -572,6 +572,54 @@ app.post("/comments", async (req, res) => {
   }
 });
 
+// Search student posts
+app.get("/search/student-posts", async (req, res) => {
+  const searchTerm = req.query.q;
+  let db = await connect();
+  
+  try {
+    const studentPostsRef = db.collection("student-posts");
+    const results = await studentPostsRef
+      .find({
+        $or: [
+          { title: { $regex: searchTerm, $options: "i" } },
+          { text: { $regex: searchTerm, $options: "i" } },
+          { email: { $regex: searchTerm, $options: "i" } }
+        ]
+      })
+      .toArray();
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("Error searching student posts:", error);
+    res.status(500).json({ error: "Error searching student posts" });
+  }
+});
+
+// Search teacher posts
+app.get("/search/teacher-posts", async (req, res) => {
+  const searchTerm = req.query.q;
+  let db = await connect();
+  
+  try {
+    const teacherPostsRef = db.collection("teacher-posts");
+    const results = await teacherPostsRef
+      .find({
+        $or: [
+          { title: { $regex: searchTerm, $options: "i" } },
+          { text: { $regex: searchTerm, $options: "i" } },
+          { email: { $regex: searchTerm, $options: "i" } }
+        ]
+      })
+      .toArray();
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("Error searching teacher posts:", error);
+    res.status(500).json({ error: "Error searching teacher posts" });
+  }
+});
+
 // Fetch user profile by ID
 app.get("/profile/:userId", async (req, res) => {
   let db = await connect();
