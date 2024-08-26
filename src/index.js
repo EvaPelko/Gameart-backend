@@ -256,7 +256,7 @@ app.post('/posts', upload.single('image'), async (req, res) => {
       }
 
       const postDoc = {
-          url: req.file ? `${req.protocol}://${req.get('host')}/uploads/posts/${req.file.filename}` : null,
+          url: req.file ? `/uploads/posts/${req.file.filename}` : null,
           title: title,
           text: text,
           posted_at: new Date(),
@@ -286,7 +286,7 @@ app.post('/posts', upload.single('image'), async (req, res) => {
 });
 
 // Serve static files from the "uploads" directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/posts', express.static(path.join(__dirname, 'uploads')));
 
 // Delete a student post by ID
 app.delete("/student-posts/:id", async (req, res) => {
