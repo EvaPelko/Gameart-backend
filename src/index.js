@@ -256,7 +256,7 @@ app.post('/posts', upload.single('image'), async (req, res) => {
       }
 
       const postDoc = {
-          url: req.file ? `/uploads/posts/${req.file.filename}` : null,
+          url: req.file ? `${req.protocol}://${req.get('host')}/uploads/posts/${req.file.filename}` : null,
           title: title,
           text: text,
           posted_at: new Date(),
