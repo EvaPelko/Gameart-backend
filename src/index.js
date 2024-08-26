@@ -286,7 +286,7 @@ app.post('/posts', upload.single('image'), async (req, res) => {
 });
 
 // Serve static files from the "uploads" directory
-app.use('/uploads/posts', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Delete a student post by ID
 app.delete("/student-posts/:id", async (req, res) => {
