@@ -632,6 +632,24 @@ app.get("/profile/:userId", async (req, res) => {
   }
 });
 
+// Backend API route to get user profile type by email
+app.get("/user/profile-type", async (req, res) => {
+  try {
+    const { email } = req.query; // Assume email is passed as query parameter
+    const db = await connect();
+    const user = await db.collection("users").findOne({ Email: email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ profileType: user.ProfileType });
+  } catch (error) {
+    console.error("Error fetching user profile type:", error);
+    res.status(500).json({ error: "Failed to fetch user profile type" });
+  }
+});
+
 // Follow a user
 app.post("/follow/:userId", async (req, res) => {
   let db = await connect();
