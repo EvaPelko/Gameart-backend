@@ -26,3 +26,5 @@ Ovaj repozitorij je nastavak od [projekta za Programsko Inženjerstvo.](https://
 Link na [Frontend](https://github.com/EvaPelko/Gameart-frontend/tree/main).
 
 Backend koristi MongoDB, NoSQL bazu podataka koja se ističe svojom fleksibilnošću, skalabilnošću i sposobnošću upravljanja velikim količinama podataka. Za razliku od tradicionalnih relacijskih baza podataka koje koriste tablice za pohranu podataka, MongoDB koristi dokumente u formatu BSON (Binary JSON) koji omogućuju pohranu podataka u strukturiranom, ali vrlo fleksibilnom formatu. Ovo čini MongoDB idealnim za aplikacije koje zahtijevaju brzu prilagodbu, dinamične promjene u strukturi podataka i visoke performanse.
+
+Link na backend: https://gameart-backend-production.up.railway.app/ 
